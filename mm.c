@@ -3,6 +3,8 @@
 #include<time.h>
 #include "mm.h"
 
+#define INDEX(m,n) 
+
 
 
 // Task 1: Flush the cache so that we can do our measurement :)
@@ -39,6 +41,20 @@ void multiply_base()
 	// Your code here
 	//
 	// Implement your baseline matrix multiply here.
+	long row = (long)SIZEX;
+	long col = (long)SIZEY;
+
+	for(long n = 0; n < row; n++){
+		for(long m = 0; m < col; m++){
+			long sum = 0;
+
+			for(long i = 0; i < col; i++){
+				sum += ( huge_matrixA[ (row * n) + k] * huge_matrixB[ (k * col) + col] );
+			}
+			huge_matrixC[ (n * row) + m ] = sum;
+		}
+	}
+
 	
 }
 
