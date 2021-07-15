@@ -6,10 +6,31 @@
 
 
 // Task 1: Flush the cache so that we can do our measurement :)
-void flush_all_caches()
-{
+void flush_all_caches(){
 	// Your code goes here
+	
+	// from stack overflow link 1 in ref; not sure if this work
+	for (long k = 0; k < (row * col) ; k++){
+        asm volatile ("clflush (%0)\n\t"
+                :
+                : "r"(huge_matrixA + k)
+                : "memory");
+        asm volatile ("clflush (%0)\n\t"
+                :
+                : "r"(huge_matrixB + k)
+                : "memory");
+        asm volatile ("clflush (%0)\n\t"
+                :
+                : "r"(huge_matrixC + k)
+                : "memory");
+    }
+    asm volatile ("sfence\n\t"
+            :
+            :
+            : "memory");
+
 }
+
 
 void load_matrix_base()
 {
@@ -94,7 +115,7 @@ void multiply()
 
 int main()
 {
-	
+	printf("1\n");
 	clock_t s,t;
 	double total_in_base = 0.0;
 	double total_in_your = 0.0;
@@ -104,9 +125,11 @@ int main()
 	fin2 = fopen("./input2.in","r");
 	fout = fopen("./out.in","w");
 	ftest = fopen("./reference.in","r");
+	printf("2\n");
 	
 
 	flush_all_caches();
+	printf("3\n");
 
 	s = clock();
 	load_matrix_base();
@@ -146,3 +169,14 @@ int main()
 
 	return 0;
 }
+
+
+/*=============== collaborator ===============
+- Vanessa Rujipatanakul 6280204
+
+================= ref ===============
+flush all caches
+	https://stackoverflow.com/questions/11277984/how-to-flush-the-cpu-cache-in-linux-from-a-c-program
+
+
+*/
