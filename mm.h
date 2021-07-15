@@ -19,6 +19,8 @@ void load_matrix();
 void multiply();
 
 // Any additional variables needed go here
+long row = (long)SIZEX; // they are here because i dont waht to write them over and over
+long col = (long)SIZEY;
 
 // Any helper functions go here
 
