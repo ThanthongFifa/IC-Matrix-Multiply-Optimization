@@ -12,17 +12,18 @@ void flush_all_caches(){
 	
 	// from stack overflow link 1 in ref; not sure if this work
 	for (long k = 0; k < (row * col) ; k++){
-		printf("inside loop\n");
+		printf("inside loop: %ld\n", k);
 
         asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + k) : "memory"); // seg false here
 
         asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixB + k) : "memory");
 
         asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixC + k) : "memory");
+
     }
 	
 	printf("outside\n");
-    asm volatile ("sfence\n\t" :: : "memory");
+    asm volatile ("sfence\n\t" ::: "memory");
 
 }
 
@@ -53,7 +54,6 @@ void free_all()
 void multiply_base()
 {
 	// Your code here
-	//s
 	// Implement your baseline matrix multiply here.
 	for(long n = 0; n < row; n++){
 		for(long m = 0; m < col; m++){
