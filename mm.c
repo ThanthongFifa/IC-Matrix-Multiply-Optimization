@@ -3,8 +3,6 @@
 #include<time.h>
 #include "mm.h"
 
-#define INDEX(m,n) 
-
 
 
 // Task 1: Flush the cache so that we can do our measurement :)
@@ -39,7 +37,7 @@ void free_all()
 void multiply_base()
 {
 	// Your code here
-	//
+	//s
 	// Implement your baseline matrix multiply here.
 	for(long n = 0; n < row; n++){
 		for(long m = 0; m < col; m++){
