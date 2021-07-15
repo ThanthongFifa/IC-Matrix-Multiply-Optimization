@@ -7,27 +7,22 @@
 
 // Task 1: Flush the cache so that we can do our measurement :)
 void flush_all_caches(){
+	printf("here\n");
 	// Your code goes here
 	
 	// from stack overflow link 1 in ref; not sure if this work
 	for (long k = 0; k < (row * col) ; k++){
-        asm volatile ("clflush (%0)\n\t"
-                :
-                : "r"(huge_matrixA + k)
-                : "memory");
-        asm volatile ("clflush (%0)\n\t"
-                :
-                : "r"(huge_matrixB + k)
-                : "memory");
-        asm volatile ("clflush (%0)\n\t"
-                :
-                : "r"(huge_matrixC + k)
-                : "memory");
+		printf("inside loop\n");
+
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + k) : "memory"); // seg false here
+
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixB + k) : "memory");
+
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixC + k) : "memory");
     }
-    asm volatile ("sfence\n\t"
-            :
-            :
-            : "memory");
+	
+	printf("outside\n");
+    asm volatile ("sfence\n\t" :: : "memory");
 
 }
 
@@ -101,9 +96,21 @@ void write_results()
 	// Each line represent value in the X-dimension of your matrix
 }
 
-void load_matrix()
+void load_matrix() // copy of load_matrix_base() (for now)
 {
 	// Your code here
+	long i;
+	huge_matrixA = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+	huge_matrixB = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+	huge_matrixC = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+	// Load the input
+	// Note: This is suboptimal because each of these loads can be done in parallel.
+	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
+	{
+		fscanf(fin1,"%ld", (huge_matrixA+i)); 		
+		fscanf(fin2,"%ld", (huge_matrixB+i)); 		
+		huge_matrixC[i] = 0;		
+	}
 }
 
 
@@ -128,7 +135,7 @@ int main()
 	printf("2\n");
 	
 
-	flush_all_caches();  //seg false here
+	flush_all_caches();
 	printf("3\n");
 
 	s = clock();
@@ -178,6 +185,7 @@ int main()
 ================= ref ===============
 flush all caches
 	https://stackoverflow.com/questions/11277984/how-to-flush-the-cpu-cache-in-linux-from-a-c-program
+	https://stackoverflow.com/questions/39448276/how-to-use-clflush
 
 
 */
