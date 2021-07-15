@@ -69,9 +69,9 @@ void multiply_base()
 			}
 			huge_matrixC[ (n * row) + m ] = sum;
 		}
+
 	}
 
-	
 }
 
 void compare_results()
@@ -128,11 +128,12 @@ int main()
 	printf("2\n");
 	
 
-	flush_all_caches();
+	flush_all_caches();  //seg false here
 	printf("3\n");
 
 	s = clock();
 	load_matrix_base();
+	printf("4\n");
 	t = clock();
 	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
