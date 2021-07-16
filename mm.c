@@ -9,14 +9,13 @@
 void flush_all_caches(){
 	// Your code goes here
 	
-	// from stack overflow link 1 in ref; not sure if this work
-	for (long k = 0; k < (row * col) ; k++){
+	for (long i = 0; i < (row * col) ; i++){
 
-        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + k) : "memory");
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + i) : "memory");
 
-        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixB + k) : "memory");
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixB + i) : "memory");
 
-        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixC + k) : "memory");
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixC + i) : "memory");
 
     }
 	
@@ -49,7 +48,6 @@ void free_all()
 }
 
 void multiply_base(){
-	
 	for(long i = 0; i < row; i++){ //loop for SIZEX
 		for(long j = 0; j < col; j++){ // loop for SIZEY
 			long num = 0;
@@ -124,9 +122,24 @@ void load_matrix() // copy of load_matrix_base() (for now)
 
 
 
-void multiply()
-{
-	// Your code here
+void multiply(){
+	long s = 20; // block size
+	long temp;
+	long n = (int)row; // matrix size
+
+	for(long jj = 0; jj < n; jj+= s){
+        for(long kk = 0; kk < n; kk += s){
+			for(long i = 0; i < n; i++){
+				for(long j = jj; j < ( (jj+s) > n?n : (jj + s) ); j++){
+					temp = 0;
+					for(long k = kk; k < ( (kk+s) > n?n : (kk+s) ); k++){
+						temp += huge_matrixA[ (k * row) + i] * huge_matrixB[ (i * row) + k]; // == temp += a[i][k] * b[k][j];
+					}
+					huge_matrixC[ (i * row) + j ] += temp; //c[i][j] += temp;
+				}
+			}
+        }
+	}	
 }
 
 int main()
@@ -199,6 +212,9 @@ flush all caches
 Blocked Matrix Multiplication
 	https://gist.github.com/metallurgix/8ee5262ed818730b5cc0
 	https://www.youtube.com/watch?v=5MFWywYY9bE
+	https://github.com/PatoBeltran/hpmmm/blob/master/matrixmultiply.c
+	https://malithjayaweera.com/2020/07/blocked-matrix-multiplication/
+	https://stackoverflow.com/questions/16115770/block-matrix-multiplication
 
 
 */
