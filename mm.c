@@ -7,14 +7,12 @@
 
 // Task 1: Flush the cache so that we can do our measurement :)
 void flush_all_caches(){
-	printf("here\n");
 	// Your code goes here
 	
 	// from stack overflow link 1 in ref; not sure if this work
 	for (long k = 0; k < (row * col) ; k++){
-		printf("inside loop: %ld\n", k);
 
-        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + k) : "memory"); // seg false here
+        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + k) : "memory");
 
         asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixB + k) : "memory");
 
@@ -22,7 +20,6 @@ void flush_all_caches(){
 
     }
 	
-	printf("outside\n");
     asm volatile ("sfence\n\t" ::: "memory");
 
 }
@@ -51,22 +48,18 @@ void free_all()
 	free(huge_matrixC);
 }
 
-void multiply_base()
-{
-	// Your code here
-	// Implement your baseline matrix multiply here.
-	for(long n = 0; n < row; n++){
-		for(long m = 0; m < col; m++){
-			long sum = 0;
+void multiply_base(){
+	
+	for(long i = 0; i < row; i++){ //loop for SIZEX
+		for(long j = 0; j < col; j++){ // loop for SIZEY
+			long num = 0;
 
-			for(long i = 0; i < col; i++){
-				sum += ( huge_matrixA[ (row * n) + i] * huge_matrixB[ (i * col) + col] );
+			for(long k = 0; k < col; k++){
+				num += ( huge_matrixA[ (row * i) + k] * huge_matrixB[ (k * col) + col] );
 			}
-			huge_matrixC[ (n * row) + m ] = sum;
+			huge_matrixC[ (i * row) + j ] = num;
 		}
-
 	}
-
 }
 
 void compare_results()
@@ -88,12 +81,28 @@ void compare_results()
 	fclose(ftest);
 }
 
-void write_results()
-{
+void write_results(){
 	// Your code here
 	//
 	// Basically, make sure the result is written on fout
 	// Each line represent value in the X-dimension of your matrix
+
+	char result[BUF];
+
+	// read from matrixC and write in fout
+	for( long i = 0; i < row; i++){
+		for( long j = 0; j < col; j++){
+
+			memset(result, 0, BUF);
+			long pos = (i * row) + j;
+
+			sprintf(result, "%ld, ", huge_matrixC[pos]);
+			fwrite(result, sizeof(char), strlen(result), fout); //write a line to fout
+			
+		}
+		char* end = "\n"; // end of line
+		fwrite(end, sizeof(char), strlen(end), fout); //write new line
+	}
 }
 
 void load_matrix() // copy of load_matrix_base() (for now)
@@ -186,6 +195,10 @@ int main()
 flush all caches
 	https://stackoverflow.com/questions/11277984/how-to-flush-the-cpu-cache-in-linux-from-a-c-program
 	https://stackoverflow.com/questions/39448276/how-to-use-clflush
+
+Blocked Matrix Multiplication
+	https://gist.github.com/metallurgix/8ee5262ed818730b5cc0
+	https://www.youtube.com/watch?v=5MFWywYY9bE
 
 
 */

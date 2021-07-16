@@ -19,6 +19,7 @@ void load_matrix();
 void multiply();
 
 // Any additional variables needed go here
+#define BUF 500
 long row = (long)SIZEX; // they are here because i dont waht to write them over and over
 long col = (long)SIZEY;
 
