@@ -1,17 +1,18 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
+#include <string.h>
 #include "mm.h"
-
 
 
 // Task 1: Flush the cache so that we can do our measurement :)
 void flush_all_caches(){
 	// Your code goes here
+	//printf("A: %ls\nB: %ls\nC: %ls\n", huge_matrixA,huge_matrixB,huge_matrixC);
 	
 	for (long i = 0; i < (row * col) ; i++){
 
-        asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixA + i) : "memory");
+        asm volatile ("clflush (%0)\n\t":: "r"(huge_matrixA + i) : "memory");
 
         asm volatile ("clflush (%0)\n\t" :: "r"(huge_matrixB + i) : "memory");
 
@@ -20,9 +21,7 @@ void flush_all_caches(){
     }
 	
     asm volatile ("sfence\n\t" ::: "memory");
-
 }
-
 
 void load_matrix_base()
 {
@@ -30,12 +29,15 @@ void load_matrix_base()
 	huge_matrixA = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
 	huge_matrixB = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
 	huge_matrixC = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+
+	//printf("A: %ls\nB: %ls\nC: %ls\n", huge_matrixA,huge_matrixB,huge_matrixC);
+
 	// Load the input
 	// Note: This is suboptimal because each of these loads can be done in parallel.
 	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
 	{
-		fscanf(fin1,"%ld", (huge_matrixA+i)); 		
-		fscanf(fin2,"%ld", (huge_matrixB+i)); 		
+		fscanf(fin1,"%ld", (huge_matrixA+i)); 	
+		fscanf(fin2,"%ld", (huge_matrixB+i)); 
 		huge_matrixC[i] = 0;		
 	}
 }
@@ -50,11 +52,13 @@ void free_all()
 void multiply_base(){
 	for(long i = 0; i < row; i++){ //loop for SIZEX
 		for(long j = 0; j < col; j++){ // loop for SIZEY
+
 			long num = 0;
 
 			for(long k = 0; k < col; k++){
 				num += ( huge_matrixA[ (row * i) + k] * huge_matrixB[ (k * col) + col] );
 			}
+
 			huge_matrixC[ (i * row) + j ] = num;
 		}
 	}
@@ -63,12 +67,14 @@ void multiply_base(){
 void compare_results()
 {
 	fout = fopen("./out.in","r");
+	ftest = fopen("./reference.in","r");
+
 	long i;
 	long temp1, temp2;
 	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
 	{
 		fscanf(fout, "%ld", &temp1);
-		fscanf(fout, "%ld", &temp2);
+		fscanf(ftest, "%ld", &temp2);
 		if(temp1!=temp2)
 		{
 			printf("Wrong solution!");
@@ -94,7 +100,7 @@ void write_results(){
 			memset(result, 0, BUF);
 			long pos = (i * row) + j;
 
-			sprintf(result, "%ld, ", huge_matrixC[pos]);
+			sprintf(result, "%ld ", huge_matrixC[pos]);
 			fwrite(result, sizeof(char), strlen(result), fout); //write a line to fout
 			
 		}
@@ -114,37 +120,49 @@ void load_matrix() // copy of load_matrix_base() (for now)
 	// Note: This is suboptimal because each of these loads can be done in parallel.
 	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
 	{
-		fscanf(fin1,"%ld", (huge_matrixA+i)); 		
-		fscanf(fin2,"%ld", (huge_matrixB+i)); 		
+		fscanf(fin1,"%ld", (huge_matrixB+i)); 		
+		fscanf(fin2,"%ld", (huge_matrixA+i)); 		
 		huge_matrixC[i] = 0;		
 	}
 }
 
-
-
 void multiply(){
-	long s = 20; // block size
-	long temp;
-	long n = (int)row; // matrix size
+	long blockSize = 20; // block size
+	long n = row; // matrix size
 
-	for(long jj = 0; jj < n; jj+= s){
-        for(long kk = 0; kk < n; kk += s){
-			for(long i = 0; i < n; i++){
-				for(long j = jj; j < ( (jj+s) > n?n : (jj + s) ); j++){
-					temp = 0;
-					for(long k = kk; k < ( (kk+s) > n?n : (kk+s) ); k++){
-						temp += huge_matrixA[ (k * row) + i] * huge_matrixB[ (i * row) + k]; // == temp += a[i][k] * b[k][j];
+	for(long bi = 0; bi < row; bi += blockSize){
+		for(long bj = 0; bj < col; bj += blockSize){
+
+			for(long bk = 0; bk < row; bk += blockSize){
+
+				for(long i = bi; i < blockSize + bi; i++){
+					for(long j = bj; j < blockSize + bj; j++){
+
+						for(long k = bk; k < blockSize + bk; k++){
+							huge_matrixC[(i * row) + j] += huge_matrixA[(i * row) + k] * huge_matrixB[(k * row) + j];
+						}
 					}
-					huge_matrixC[ (i * row) + j ] += temp; //c[i][j] += temp;
-				}
-			}
+				} 
+			} 
+		} 
+	}
+}
+
+void pm(long* m){
+    for (long i = 0; i < row * col; i++)
+    {
+        if (i % (long)SIZEX == 0)
+        {
+            printf("\n");
         }
-	}	
+        printf("%ld ", m[i]);
+    }
+    printf("\n");
 }
 
 int main()
 {
-	printf("1\n");
+	
 	clock_t s,t;
 	double total_in_base = 0.0;
 	double total_in_your = 0.0;
@@ -154,15 +172,15 @@ int main()
 	fin2 = fopen("./input2.in","r");
 	fout = fopen("./out.in","w");
 	ftest = fopen("./reference.in","r");
-	printf("2\n");
-	
 
-	flush_all_caches();
-	printf("3\n");
+
+	//flush_all_caches();
+	
 
 	s = clock();
 	load_matrix_base();
-	printf("4\n");
+	//printf("%ld",huge_matrixA[1]);
+	//pm(huge_matrixA);
 	t = clock();
 	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
@@ -172,12 +190,16 @@ int main()
 	t = clock();
 	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
+	//pm(huge_matrixC);
 	fclose(fin1);
 	fclose(fin2);
 	fclose(fout);
-	free_all();
+	//free_all();
 
 	flush_all_caches();
+	free_all();
+	//pm(huge_matrixA);
+	
 
 	s = clock();
 	load_matrix();
@@ -190,6 +212,7 @@ int main()
 	t = clock();
 	total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
+	//pm(huge_matrixC);
 	write_results();
 	fclose(fin1);
 	fclose(fin2);
