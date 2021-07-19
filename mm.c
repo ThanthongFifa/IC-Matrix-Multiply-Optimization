@@ -77,7 +77,7 @@ void compare_results()
 		fscanf(ftest, "%ld", &temp2);
 		if(temp1!=temp2)
 		{
-			printf("Wrong solution!");
+			printf("Wrong solution!\n");
 			exit(1);
 		}
 	}
@@ -92,6 +92,7 @@ void write_results(){
 	// Each line represent value in the X-dimension of your matrix
 
 	char result[BUF];
+	fout = fopen("./out.in","w");
 
 	// read from matrixC and write in fout
 	for( long i = 0; i < row; i++){
@@ -127,8 +128,7 @@ void load_matrix() // copy of load_matrix_base() (for now)
 }
 
 void multiply(){
-	long blockSize = 20; // block size
-	long n = row; // matrix size
+	long blockSize = 200; // block size
 
 	for(long bi = 0; bi < row; bi += blockSize){
 		for(long bj = 0; bj < col; bj += blockSize){
@@ -139,7 +139,7 @@ void multiply(){
 					for(long j = bj; j < blockSize + bj; j++){
 
 						for(long k = bk; k < blockSize + bk; k++){
-							huge_matrixC[(i * row) + j] += huge_matrixA[(i * row) + k] * huge_matrixB[(k * row) + j];
+							huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
 						}
 					}
 				} 
@@ -180,7 +180,6 @@ int main()
 	s = clock();
 	load_matrix_base();
 	//printf("%ld",huge_matrixA[1]);
-	//pm(huge_matrixA);
 	t = clock();
 	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
@@ -197,8 +196,14 @@ int main()
 	//free_all();
 
 	flush_all_caches();
+	//pm(huge_matrixA);
 	free_all();
 	//pm(huge_matrixA);
+
+	fin1 = fopen("./input1.in","r");
+	fin2 = fopen("./input2.in","r");
+	fout = fopen("./out.in","w");
+	ftest = fopen("./reference.in","r");
 	
 
 	s = clock();
