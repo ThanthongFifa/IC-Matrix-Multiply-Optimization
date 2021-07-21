@@ -2,7 +2,11 @@
 #include<stdlib.h>
 #include<time.h>
 #include <string.h>
+#include <pthread.h>
 #include "mm-t.h"
+
+#define THREAD_NUM 6
+#define BLOCK_SIZE 100
 
 
 // Task 1: Flush the cache so that we can do our measurement :)
@@ -160,7 +164,139 @@ void pm(long* m){
     printf("\n");
 }
 
+void load_matrix_transpose() //Krittin Nisunarat (6280782)
+{
+	// Your code here
+	huge_matrixA = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+	huge_matrixB = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+	huge_matrixC = malloc(sizeof(long)*(long)SIZEX*(long)SIZEY);
+	// Load the input
+	// Note: This is suboptimal because each of these loads can be done in parallel.
+
+	for(long i = 0; i < row; i++){
+		for(long j = 0; j < col; j++){
+			fscanf(fin1,"%ld", (huge_matrixB + ((i * row) + j))); 		
+			fscanf(fin2,"%ld", (huge_matrixA + ((j * row) + i))); 		
+			huge_matrixC[ (i * row) + j] = 0;
+
+		}		
+	}
+}
+
 //===================== Thread Zone ======================
+pthread_mutex_t mutexQueue;
+pthread_mutex_t mutexMatrix;
+pthread_cond_t condQueue;
+
+typedef struct task {
+	long r;
+	long c;
+	long blockSize;
+	int stop;
+} Task;
+
+Task taskQueue[BUF];
+int taskCount = 0;
+
+void submitTask(Task task) {
+    pthread_mutex_lock(&mutexQueue);
+    taskQueue[taskCount] = task;
+    taskCount++;
+    pthread_mutex_unlock(&mutexQueue);
+    pthread_cond_signal(&condQueue);
+}
+
+void* startThread(void* args) {
+	
+    while (1) {
+        Task task;
+
+        pthread_mutex_lock(&mutexQueue);
+
+        while (taskCount == 0) {
+            pthread_cond_wait(&condQueue, &mutexQueue);
+        }
+
+        task = taskQueue[0];
+        for (int i = 0; i < taskCount - 1; i++) {
+            taskQueue[i] = taskQueue[i + 1];
+        }
+        taskCount--;
+
+        pthread_mutex_unlock(&mutexQueue);
+		//take poison
+		if( task.stop < 0){
+			break;
+		}
+		//printf("working\n");
+
+        doTask(task.r, task.c, task.blockSize);
+    }
+	return NULL;
+}
+
+void doTask(long r, long c, long b){
+	for( long ii = 0; ii < row; ii+= b){
+		for( long i = r; i < r + b; i++){
+			for( long j = c; j < c + b; j++){
+				for( long k = ii; k < ii + b; k++){
+					//huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(j * row) + k];
+					huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
+				}
+			}
+		}
+	}
+}
+
+void thread_multiply(){
+	//init stuff
+	pthread_t thread[THREAD_NUM];
+    pthread_mutex_init(&mutexQueue, NULL);
+	pthread_mutex_init(&mutexMatrix, NULL);
+    pthread_cond_init(&condQueue, NULL);
+
+	//spawn thread
+	for (int i = 0; i < THREAD_NUM; i++) {
+        if (pthread_create(&thread[i], NULL, &startThread, NULL) != 0) {
+            perror("Failed to create the thread");
+        }
+    }
+	//printf("finish spawn\n");
+
+	//submit task
+	for(long i = 0; i < row; i += BLOCK_SIZE){
+		for(long j = 0; j < col; j += BLOCK_SIZE){
+			Task task;
+			task.blockSize = BLOCK_SIZE;
+			task.r = i;
+			task.c = j;
+			task.stop = 1; //normal task
+			submitTask(task);
+			//printf("numTask: %d\n", taskCount);
+		}
+	}
+	//printf("finish add\n");
+
+	//poison pills
+	Task poison;
+	poison.stop = -1;
+	for(int i = 0; i < THREAD_NUM; i++){
+		submitTask(poison);
+	}
+	//printf("finish poison\n");
+
+	//after finish work
+	for (int i = 0; i < THREAD_NUM; i++) {
+        if (pthread_join(thread[i], NULL) != 0) {
+            perror("Failed to join the thread");
+        }
+    }
+    pthread_mutex_destroy(&mutexQueue);
+	pthread_mutex_destroy(&mutexMatrix);
+    pthread_cond_destroy(&condQueue);
+}
+
+
 
 //========================================================
 int main()
@@ -176,10 +312,8 @@ int main()
 	fout = fopen("./out.in","w");
 	ftest = fopen("./reference.in","r");
 
-
 	//flush_all_caches();
 	
-
 	s = clock();
 	load_matrix_base();
 	//printf("%ld",huge_matrixA[1]);
@@ -192,6 +326,36 @@ int main()
 	t = clock();
 	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
+	printf("=========================\n");
+	//pm(huge_matrixC);
+	fclose(fin1);
+	fclose(fin2);
+	fclose(fout);
+	//free_all();
+
+	flush_all_caches();
+	//pm(huge_matrixA);
+	free_all();
+	//pm(huge_matrixA);
+
+	fin1 = fopen("./input1.in","r");
+	fin2 = fopen("./input2.in","r");
+	fout = fopen("./out.in","w");
+	ftest = fopen("./reference.in","r");
+
+	s = clock();
+	load_matrix_base();
+	//printf("%ld",huge_matrixA[1]);
+	t = clock();
+	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	printf("[Block] Total time taken during the load = %f seconds\n", total_in_base);
+
+	s = clock();
+	multiply();
+	t = clock();
+	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	printf("[Block] Total time taken during the multiply = %f seconds\n", total_mul_base);
+	printf("=========================\n");
 	//pm(huge_matrixC);
 	fclose(fin1);
 	fclose(fin2);
@@ -210,16 +374,18 @@ int main()
 	
 
 	s = clock();
+	//load_matrix_transpose();
 	load_matrix();
 	t = clock();
 	total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the load = %f seconds\n", total_in_your);
+	printf("[Thread] Total time taken during the load = %f seconds\n", total_in_your);
 
 	s = clock();
-	multiply();
+	thread_multiply();
 	t = clock();
 	total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
+	printf("[Thread] time taken during the multiply = %f seconds\n", total_mul_your);
+	printf("=========================\n");
 	//pm(huge_matrixC);
 	write_results();
 	fclose(fin1);
@@ -233,7 +399,9 @@ int main()
 
 
 /*=============== collaborator ===============
-- Vanessa Rujipatanakul 6280204
+
+- Vanessa Rujipatanakul (6280204)
+- Krittin Nisunarat (6280782)
 
 ================= ref ===============
 flush all caches
@@ -246,6 +414,8 @@ Blocked Matrix Multiplication
 	https://github.com/PatoBeltran/hpmmm/blob/master/matrixmultiply.c
 	https://malithjayaweera.com/2020/07/blocked-matrix-multiplication/
 	https://stackoverflow.com/questions/16115770/block-matrix-multiplication
-
-
+Thread
+	https://github.com/ThanthongFifa
+	https://code-vault.net/lesson/j62v2novkv:1609958966824
+	https://youtu.be/_n2hE2gyPxU
 */

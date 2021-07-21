@@ -26,4 +26,8 @@ long col = (long)SIZEY;
 
 // Any helper functions go here
 void pm(); //print matrix
+void submitTask();
+void* startThread();
+void doTask();
+void thread_multiply();
 
