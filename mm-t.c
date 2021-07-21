@@ -230,7 +230,7 @@ void* startThread(void* args) {
 		}
 		//printf("working\n");
 
-        doTask(task.r, task.c, task.blockSize);
+        doTask(task.r, task.c, task.blockSize); //this faster than dotask(&task)
     }
 	return NULL;
 }
