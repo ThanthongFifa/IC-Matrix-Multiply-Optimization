@@ -132,17 +132,16 @@ void load_matrix() // copy of load_matrix_base() (for now)
 }
 
 void multiply(){
-	long blockSize = 200; // block size
 
-	for(long bi = 0; bi < row; bi += blockSize){
-		for(long bj = 0; bj < col; bj += blockSize){
+	for(long bi = 0; bi < row; bi += BLOCK_SIZE){
+		for(long bj = 0; bj < col; bj += BLOCK_SIZE){
 
-			for(long bk = 0; bk < row; bk += blockSize){
+			for(long bk = 0; bk < row; bk += BLOCK_SIZE){
 
-				for(long i = bi; i < blockSize + bi; i++){
-					for(long j = bj; j < blockSize + bj; j++){
+				for(long i = bi; i < BLOCK_SIZE + bi; i++){
+					for(long j = bj; j < BLOCK_SIZE + bj; j++){
 
-						for(long k = bk; k < blockSize + bk; k++){
+						for(long k = bk; k < BLOCK_SIZE + bk; k++){
 							huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
 						}
 					}
@@ -224,7 +223,7 @@ void* startThread(void* args) {
         taskCount--;
 
         pthread_mutex_unlock(&mutexQueue);
-		//take poison
+		//check poison
 		if( task.stop < 0){
 			break;
 		}
@@ -237,8 +236,10 @@ void* startThread(void* args) {
 
 void doTask(long r, long c, long b){
 	for( long ii = 0; ii < row; ii+= b){
+		
 		for( long i = r; i < r + b; i++){
 			for( long j = c; j < c + b; j++){
+
 				for( long k = ii; k < ii + b; k++){
 					//huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(j * row) + k];
 					huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
@@ -332,7 +333,7 @@ int main()
 	fclose(fin2);
 	fclose(fout);
 	//free_all();
-
+//====================================================
 	flush_all_caches();
 	//pm(huge_matrixA);
 	free_all();
@@ -361,7 +362,7 @@ int main()
 	fclose(fin2);
 	fclose(fout);
 	//free_all();
-
+//====================================================
 	flush_all_caches();
 	//pm(huge_matrixA);
 	free_all();
