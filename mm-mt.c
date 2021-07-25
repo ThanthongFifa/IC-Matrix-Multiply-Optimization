@@ -104,10 +104,10 @@ void write_results(){
 	for( long i = 0; i < row; i++){
 		for( long j = 0; j < col; j++){
 
-			memset(result, 0, BUF);
-			long pos = (i * row) + j;
+			memset(result, '\0', BUF);
+			//long pos = (i * row) + j;
 
-			sprintf(result, "%ld ", huge_matrixC[pos]);
+			sprintf(result, "%ld ", huge_matrixC[INDEX(i,j)]);
 			fwrite(result, sizeof(char), strlen(result), fout); //write a line to fout
 			
 		}
@@ -239,15 +239,19 @@ void* startThread(void* args) {
 }
 
 void doTask(long r, long c, long b){
+	long sum;
 	for( long ii = 0; ii < row; ii+= b){
 		
 		for( long i = r; i < r + b; i++){
 			for( long j = c; j < c + b; j++){
+				sum = huge_matrixC[INDEX(i,j)];
 
 				for( long k = ii; k < ii + b; k++){
-					//huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(j * row) + k];
-					huge_matrixC[INDEX(i,j)] += huge_matrixB[INDEX(i,k)] * huge_matrixA[INDEX(k,j)];
+					sum += 
+						huge_matrixB[INDEX(i,k)] * 
+						huge_matrixA[INDEX(k,j)];
 				}
+				huge_matrixC[INDEX(i,j)] = sum;
 			}
 		}
 	}

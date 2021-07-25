@@ -102,10 +102,10 @@ void write_results(){
 	for( long i = 0; i < row; i++){
 		for( long j = 0; j < col; j++){
 
-			memset(result, 0, BUF);
-			long pos = (i * row) + j;
+			memset(result, '\0', BUF);
+			//long pos = (i * row) + j;
 
-			sprintf(result, "%ld ", huge_matrixC[pos]);
+			sprintf(result, "%ld ", huge_matrixC[INDEX(i,j)]);
 			fwrite(result, sizeof(char), strlen(result), fout); //write a line to fout
 			
 		}
@@ -144,8 +144,8 @@ void multiply(){
 
 					for(long k = kk; k < kk+BLOCK_SIZE; k++){
 						sum += 
-						huge_matrixB[INDEX(i,k)] * 
-						huge_matrixA[INDEX(k,j)];
+							huge_matrixB[INDEX(i,k)] * 
+							huge_matrixA[INDEX(k,j)];
 					}
 					huge_matrixC[ INDEX(i,j) ] = sum;
 				}
