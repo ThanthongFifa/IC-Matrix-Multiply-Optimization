@@ -180,13 +180,9 @@ int main()
 	fout = fopen("./out.in","w");
 	ftest = fopen("./reference.in","r");
 
-
-	//flush_all_caches();
 	
-
 	s = clock();
 	load_matrix_base();
-	//printf("%ld",huge_matrixA[1]);
 	t = clock();
 	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
@@ -196,16 +192,14 @@ int main()
 	t = clock();
 	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
-	//pm(huge_matrixC);
 	fclose(fin1);
 	fclose(fin2);
 	fclose(fout);
-	//free_all();
 
 	flush_all_caches();
-	//pm(huge_matrixA);
 	free_all();
-	//pm(huge_matrixA);
+
+	//=============================================
 
 	fin1 = fopen("./input1.in","r");
 	fin2 = fopen("./input2.in","r");
@@ -237,7 +231,10 @@ int main()
 
 
 /*=============== collaborator ===============
-- Vanessa Rujipatanakul 6280204
+
+- Vanessa Rujipatanakul (6280204)
+- Krittin Nisunarat (6280782)
+- Khwanchanok Chaichanayothinwatchara (6280164)
 
 ================= ref ===============
 flush all caches
