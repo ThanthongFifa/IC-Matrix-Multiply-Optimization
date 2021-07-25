@@ -4,6 +4,10 @@
 #include <string.h>
 #include "mm.h"
 
+#define BLOCK_SIZE 100
+#define INDEX(r,c) ((r*row) + c)
+
+
 
 // Task 1: Flush the cache so that we can do our measurement :)
 void flush_all_caches(){
@@ -56,10 +60,10 @@ void multiply_base(){
 			long num = 0;
 
 			for(long k = 0; k < col; k++){
-				num += ( huge_matrixA[ (row * i) + k] * huge_matrixB[ (k * col) + col] );
+				num += ( huge_matrixA[ INDEX(i,k)] * huge_matrixB[ INDEX(k,j)] );
 			}
 
-			huge_matrixC[ (i * row) + j ] = num;
+			huge_matrixC[ INDEX(i,j) ] = num;
 		}
 	}
 }
@@ -128,24 +132,27 @@ void load_matrix() // copy of load_matrix_base() (for now)
 }
 
 void multiply(){
-	long blockSize = 200; // block size
+	long sum;
 
-	for(long bi = 0; bi < row; bi += blockSize){
-		for(long bj = 0; bj < col; bj += blockSize){
+	for(long kk = 0; kk < row; kk+=BLOCK_SIZE){
+		for(long jj = 0; jj < col; jj+=BLOCK_SIZE){
 
-			for(long bk = 0; bk < row; bk += blockSize){
+			for(long i = 0; i < row; i++){
+				for(long j = jj; j < jj+BLOCK_SIZE; j++){
 
-				for(long i = bi; i < blockSize + bi; i++){
-					for(long j = bj; j < blockSize + bj; j++){
+					sum = huge_matrixC[(i * row) + j];
 
-						for(long k = bk; k < blockSize + bk; k++){
-							huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
-						}
+					for(long k = kk; k < kk+BLOCK_SIZE; k++){
+						sum += 
+						huge_matrixB[INDEX(i,k)] * 
+						huge_matrixA[INDEX(k,j)];
 					}
-				} 
-			} 
-		} 
+					huge_matrixC[ INDEX(i,j) ] = sum;
+				}
+			}
+		}
 	}
+
 }
 
 void pm(long* m){

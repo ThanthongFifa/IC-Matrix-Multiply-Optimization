@@ -5,13 +5,13 @@ CC = gcc
 CFLAGS = -O2 -Wall -m32
 LIBFLAGS=-pthread
 
-all: mm-t
+all: mm-mt mm
 
 mm: mm.c mm.h 
 	$(CC) $(CFLAGS) -o mm mm.c 
 
-mm-t: mm-t.c mm-t.h 
-	$(CC) $(CFLAGS) $(LIBFLAGS) -o mm-t mm-t.c 
+mm-mt: mm-mt.c mm-mt.h 
+	$(CC) $(CFLAGS) $(LIBFLAGS) -o mm-mt mm-mt.c 
 
 clean:
-	rm -f *.o mm mm-t
+	rm -f *.o mm mm-mt

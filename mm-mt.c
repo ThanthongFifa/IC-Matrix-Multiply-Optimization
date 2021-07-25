@@ -3,10 +3,12 @@
 #include<time.h>
 #include <string.h>
 #include <pthread.h>
-#include "mm-t.h"
+#include "mm-mt.h"
 
 #define THREAD_NUM 6
 #define BLOCK_SIZE 100
+
+#define INDEX(r,c) ((r*row) + c)
 
 
 // Task 1: Flush the cache so that we can do our measurement :)
@@ -60,7 +62,7 @@ void multiply_base(){
 			long num = 0;
 
 			for(long k = 0; k < col; k++){
-				num += ( huge_matrixA[ (row * i) + k] * huge_matrixB[ (k * col) + col] );
+				num += ( huge_matrixA[ (row * i) + k] * huge_matrixB[ (k * col) + j] );
 			}
 
 			huge_matrixC[ (i * row) + j ] = num;
@@ -132,17 +134,19 @@ void load_matrix() // copy of load_matrix_base() (for now)
 }
 
 void multiply(){
-
+	long t = 5;
 	for(long bi = 0; bi < row; bi += BLOCK_SIZE){
 		for(long bj = 0; bj < col; bj += BLOCK_SIZE){
 
 			for(long bk = 0; bk < row; bk += BLOCK_SIZE){
 
-				for(long i = bi; i < BLOCK_SIZE + bi; i++){
-					for(long j = bj; j < BLOCK_SIZE + bj; j++){
+				for(long i = bi; i < BLOCK_SIZE + bi; i+=t){
+					for(long j = bj; j < BLOCK_SIZE + bj; j+=t){
 
-						for(long k = bk; k < BLOCK_SIZE + bk; k++){
-							huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
+						for(long k = bk; k < BLOCK_SIZE + bk; k+=t){
+							for(long q = 0; q < t; q++){
+								huge_matrixC[(i * row) + j + q] += huge_matrixB[(i+q * row) + k] * huge_matrixA[(k * row) + j + q];
+							}
 						}
 					}
 				} 
@@ -242,7 +246,7 @@ void doTask(long r, long c, long b){
 
 				for( long k = ii; k < ii + b; k++){
 					//huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(j * row) + k];
-					huge_matrixC[(i * row) + j] += huge_matrixB[(i * row) + k] * huge_matrixA[(k * row) + j];
+					huge_matrixC[INDEX(i,j)] += huge_matrixB[INDEX(i,k)] * huge_matrixA[INDEX(k,j)];
 				}
 			}
 		}
@@ -333,35 +337,7 @@ int main()
 	fclose(fin2);
 	fclose(fout);
 	//free_all();
-//====================================================
-	flush_all_caches();
-	//pm(huge_matrixA);
-	free_all();
-	//pm(huge_matrixA);
 
-	fin1 = fopen("./input1.in","r");
-	fin2 = fopen("./input2.in","r");
-	fout = fopen("./out.in","w");
-	ftest = fopen("./reference.in","r");
-
-	s = clock();
-	load_matrix_base();
-	//printf("%ld",huge_matrixA[1]);
-	t = clock();
-	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("[Block] Total time taken during the load = %f seconds\n", total_in_base);
-
-	s = clock();
-	multiply();
-	t = clock();
-	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("[Block] Total time taken during the multiply = %f seconds\n", total_mul_base);
-	printf("=========================\n");
-	//pm(huge_matrixC);
-	fclose(fin1);
-	fclose(fin2);
-	fclose(fout);
-	//free_all();
 //====================================================
 	flush_all_caches();
 	//pm(huge_matrixA);
